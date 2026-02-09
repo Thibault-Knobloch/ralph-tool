@@ -1,0 +1,22 @@
+{
+  "features": [
+    {
+      "id": "example-feature",
+      "name": "Example Feature",
+      "description": "This is an example feature - replace with your actual features",
+      "feature_completed": false,
+      "tasks": [
+        {
+          "id": "example-task-1",
+          "name": "Example Task",
+          "completed": false,
+          "requirements": [
+            "Requirement 1",
+            "Requirement 2"
+          ],
+          "specFile": ".ralph/tasks/1_new_tasks/example-spec.md"
+        }
+      ]
+    }
+  ]
+}

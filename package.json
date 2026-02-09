@@ -1,0 +1,36 @@
+{
+  "name": "ralph-tool",
+  "version": "1.0.0",
+  "description": "AI-powered task automation CLI for software development",
+  "main": "bin/ralph.js",
+  "bin": {
+    "ralph": "./bin/ralph.js"
+  },
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "ai",
+    "automation",
+    "claude",
+    "cli",
+    "task-runner"
+  ],
+  "author": "Thibault Knobloch",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^12.0.0",
+    "chalk": "^4.1.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "bin/",
+    "scripts/",
+    "helpers/",
+    "templates/",
+    "Dockerfile",
+    "docker-compose.yaml"
+  ]
+}
