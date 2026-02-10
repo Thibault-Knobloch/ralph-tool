@@ -8,15 +8,11 @@ services:
       - TERM=xterm-256color
       - CLAUDE_CONFIG_DIR=/home/node/.config/claude
       - SSH_AUTH_SOCK=/run/host-services/ssh-auth.sock
-      - RALPH_HOME=/ralph-tool
       - GIT_USER_NAME=${GIT_USER_NAME:-}
       - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
     volumes:
       # Project directory mounted to /workspace (set by ralph CLI)
       # This is handled dynamically by the start.sh script
-
-      # Ralph tool installation
-      - .:/ralph-tool:ro
 
       # Persistent volumes for configs
       - claude_config:/home/node/.config/claude
