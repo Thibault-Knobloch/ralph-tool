@@ -114,6 +114,7 @@ function performInit() {
   fs.mkdirSync(path.join(PROJECT_RALPH_DIR, 'tasks', '1_new_tasks'), { recursive: true });
   fs.mkdirSync(path.join(PROJECT_RALPH_DIR, 'tasks', '2_done_tasks'), { recursive: true });
   fs.mkdirSync(path.join(PROJECT_RALPH_DIR, 'logs', 'progress'), { recursive: true });
+  fs.mkdirSync(path.join(PROJECT_RALPH_DIR, 'roles'), { recursive: true });
   console.log(chalk.green('  ✓') + ' Directories created');
 
   // Copy templates
@@ -148,6 +149,26 @@ function performInit() {
     path.join(PROJECT_RALPH_DIR, 'tasks', 'prd.json')
   );
 
+  // Plan mode files
+  fs.copyFileSync(
+    path.join(templatesDir, 'vision.md'),
+    path.join(PROJECT_RALPH_DIR, 'config', 'vision.md')
+  );
+  fs.copyFileSync(
+    path.join(templatesDir, 'plan-prompt.md'),
+    path.join(PROJECT_RALPH_DIR, 'config', 'plan-prompt.md')
+  );
+  fs.copyFileSync(
+    path.join(templatesDir, 'plan-cleanup-prompt.md'),
+    path.join(PROJECT_RALPH_DIR, 'config', 'plan-cleanup-prompt.md')
+  );
+
+  // Role files
+  copyDir(
+    path.join(templatesDir, 'roles'),
+    path.join(PROJECT_RALPH_DIR, 'roles')
+  );
+
   // Create empty progress file
   fs.writeFileSync(path.join(PROJECT_RALPH_DIR, 'tasks', 'progress.txt'), '');
 
@@ -159,10 +180,9 @@ function performInit() {
   console.log(chalk.green('Ralph initialized successfully!'));
   console.log('');
   console.log('Next steps:');
-  console.log('  1. Edit .ralph/config/prompt.md for project-specific instructions');
+  console.log('  1. Plan a feature: @.ralph/roles/ralph-plan-feature.md in Claude Code');
   console.log('  2. Edit .ralph/tasks/testing-harness.md for your build/test commands');
-  console.log('  3. Add tasks to .ralph/tasks/prd.json');
-  console.log('  4. Run \'ralph start\' to begin');
+  console.log('  3. Run \'ralph start\' to begin');
   console.log('');
 }
 
@@ -177,14 +197,17 @@ function showHelp() {
   console.log(`  ${cmd('init')}`);
   console.log('      Initialize Ralph in current directory (creates .ralph/)');
   console.log('');
-  console.log(`  ${cmd('start')} ${dim('[--max N] [--model MODEL]')}`);
+  console.log(`  ${cmd('start')} ${dim('[--max N] [--model MODEL] [--local]')}`);
   console.log('      Open Docker sandbox and start loop inside container');
   console.log('');
   console.log(`  ${cmd('sandbox')}`);
   console.log('      Open interactive Docker shell');
   console.log('');
-  console.log(`  ${cmd('loop')} ${dim('[--max N] [--model MODEL]')}`);
+  console.log(`  ${cmd('loop')} ${dim('[--max N] [--model MODEL] [--local]')}`);
   console.log('      Start Ralph loop directly (default: 6 iterations, sonnet-4-5)');
+  console.log('');
+  console.log(`  ${cmd('plan')} ${dim('[--max N] [--model MODEL]')}`);
+  console.log('      Plan features from vision.md (default: 10 iterations, cleanup every 5)');
   console.log('');
   console.log(`  ${cmd('status')}`);
   console.log('      Check current PRD task status');
@@ -204,12 +227,15 @@ function showHelp() {
   console.log('Options:');
   console.log(`  ${cmd('--max N')}          Maximum iterations (default: 6)`);
   console.log(`  ${cmd('--model MODEL')}    AI model: sonnet, opus, haiku (default: sonnet)`);
+  console.log(`  ${cmd('--local')}           Commit locally, skip branch/push/PR creation`);
   console.log('');
   console.log('Examples:');
   console.log(`  ralph ${cmd('init')}                          # Set up Ralph in your project`);
   console.log(`  ralph ${cmd('start')} --max 5 --model haiku   # Run in Docker with haiku`);
   console.log(`  ralph ${cmd('loop')}                           # Run loop directly`);
   console.log(`  ralph ${cmd('loop')} --max 10 --model opus    # 10 iterations with opus`);
+  console.log(`  ralph ${cmd('plan')}                           # Plan features from vision`);
+  console.log(`  ralph ${cmd('plan')} --max 20 --model opus    # Deep planning with opus`);
   console.log(`  ralph ${cmd('status')}                         # Check task progress`);
   console.log('');
 }
@@ -233,8 +259,10 @@ program
   .command('start')
   .option('--max <n>', 'Maximum iterations', '6')
   .option('--model <model>', 'AI model: sonnet, opus, haiku')
+  .option('--local', 'Local mode: commit but skip branch/push/PR creation')
   .action((options) => {
     requireInit();
+    if (options.local) process.env.RALPH_LOCAL = '1';
     console.log(chalk.dim('Starting Docker container...'));
     runScriptSync('start.sh', [options.max, options.model || '']);
   });
@@ -251,11 +279,31 @@ program
   .command('loop')
   .option('--max <n>', 'Maximum iterations', '6')
   .option('--model <model>', 'AI model: sonnet, opus, haiku')
+  .option('--local', 'Local mode: commit but skip branch/push/PR creation')
   .action((options) => {
     requireInit();
+    if (options.local) process.env.RALPH_LOCAL = '1';
     console.log(chalk.dim('Starting Ralph loop...'));
     const promptFile = path.join(PROJECT_RALPH_DIR, 'config', 'prompt.md');
     runScript('loop.sh', [promptFile, options.max, options.model || '']);
+  });
+
+program
+  .command('plan')
+  .option('--max <n>', 'Maximum iterations', '10')
+  .option('--model <model>', 'AI model: sonnet, opus, haiku')
+  .action((options) => {
+    requireInit();
+    const visionFile = path.join(PROJECT_RALPH_DIR, 'config', 'vision.md');
+    if (!fs.existsSync(visionFile)) {
+      console.error(chalk.red('Error: Vision file not found at .ralph/config/vision.md'));
+      console.log('');
+      console.log('Create your vision first:');
+      console.log('  Use @.ralph/roles/ralph-plan-vision.md in Claude Code');
+      process.exit(1);
+    }
+    console.log(chalk.dim('Starting Ralph planning loop...'));
+    runScript('plan-loop.sh', [options.max, options.model || '']);
   });
 
 program

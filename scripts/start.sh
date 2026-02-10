@@ -14,6 +14,7 @@ PROJECT_DIR="${PROJECT_DIR:?PROJECT_DIR not set}"
 RALPH_CMD="ralph loop"
 [[ -n "$MODEL" ]] && RALPH_CMD="$RALPH_CMD --model $MODEL"
 RALPH_CMD="$RALPH_CMD --max ${MAX_ITERS}"
+[[ "${RALPH_LOCAL:-}" == "1" ]] && RALPH_CMD="$RALPH_CMD --local"
 
 # Run the ralph loop command inside the Docker container
 # Mount the project directory to /workspace

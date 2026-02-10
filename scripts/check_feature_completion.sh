@@ -69,9 +69,16 @@ jq --arg id "$CURRENT_FEATURE" '(.features[] | select(.id == $id) | .feature_com
 mv "${PRD_FILE}.tmp" "$PRD_FILE"
 echo "  ✓ Feature $CURRENT_FEATURE marked as completed"
 
-# Step 2: Create git branch, commit, push, and PR
-echo "[2/4] Creating git branch and PR for feature..."
-"${RALPH_HOME}/scripts/git_feature_complete.sh" "$FEATURE_NAME" "$FEATURE_NAME_KEBAB" "$RALPH_NAME" "$PROGRESS_FILE"
+# Step 2: Git operations
+if [[ "${RALPH_LOCAL:-}" == "1" ]]; then
+    echo "[2/4] Committing changes locally (--local mode, skipping branch/push/PR)..."
+    git add -A -- ':!.ralph'
+    git commit -m "RALPH: ${FEATURE_NAME}" || echo "  ⓘ Nothing to commit"
+    echo "  ✓ Changes committed on current branch"
+else
+    echo "[2/4] Creating git branch and PR for feature..."
+    "${RALPH_HOME}/scripts/git_feature_complete.sh" "$FEATURE_NAME" "$FEATURE_NAME_KEBAB" "$RALPH_NAME" "$PROGRESS_FILE"
+fi
 
 # Step 3: Archive progress.txt
 echo "[3/4] Archiving progress.txt..."

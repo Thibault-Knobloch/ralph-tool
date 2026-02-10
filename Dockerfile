@@ -16,9 +16,10 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 # Install Claude Code globally
 RUN npm install -g @anthropic-ai/claude-code
 
-# Install ralph-tool globally (will be mounted)
-# Note: In production, this would be: RUN npm install -g ralph-tool
-# For development, we mount the ralph-tool directory
+# Install ralph-tool globally from source
+COPY . /tmp/ralph-tool
+RUN npm install -g /tmp/ralph-tool && rm -rf /tmp/ralph-tool \
+  && ln -sf $(which ralph) /usr/local/bin/ralph
 
 # Prepare writable config dirs for the non-root user
 RUN mkdir -p /home/node/.config /home/node/.cache /home/node/.ssh \
