@@ -209,6 +209,9 @@ function showHelp() {
   console.log(`  ${cmd('plan')} ${dim('[--max N] [--model MODEL]')}`);
   console.log('      Plan features from vision.md (default: 10 iterations, cleanup every 5)');
   console.log('');
+  console.log(`  ${cmd('burn')} ${dim('[--plan-max N] [--start-max N] [--model MODEL] [--local] [--sandbox]')}`);
+  console.log('      Auto mode: plan from vision.md then execute (plan → execute)');
+  console.log('');
   console.log(`  ${cmd('status')}`);
   console.log('      Check current PRD task status');
   console.log('');
@@ -236,6 +239,8 @@ function showHelp() {
   console.log(`  ralph ${cmd('loop')} --max 10 --model opus    # 10 iterations with opus`);
   console.log(`  ralph ${cmd('plan')}                           # Plan features from vision`);
   console.log(`  ralph ${cmd('plan')} --max 20 --model opus    # Deep planning with opus`);
+  console.log(`  ralph ${cmd('burn')}                           # Plan + execute in one shot`);
+  console.log(`  ralph ${cmd('burn')} --plan-max 20 --start-max 10  # Custom iteration limits`);
   console.log(`  ralph ${cmd('status')}                         # Check task progress`);
   console.log('');
 }
@@ -304,6 +309,28 @@ program
     }
     console.log(chalk.dim('Starting Ralph planning loop...'));
     runScript('plan-loop.sh', [options.max, options.model || '']);
+  });
+
+program
+  .command('burn')
+  .option('--plan-max <n>', 'Max planning iterations', '10')
+  .option('--start-max <n>', 'Max execution iterations', '6')
+  .option('--model <model>', 'AI model: sonnet, opus, haiku')
+  .option('--local', 'Local mode: commit but skip branch/push/PR creation')
+  .option('--sandbox', 'Run both plan and execution phases inside Docker sandbox')
+  .action((options) => {
+    requireInit();
+    const visionFile = path.join(PROJECT_RALPH_DIR, 'config', 'vision.md');
+    if (!fs.existsSync(visionFile)) {
+      console.error(chalk.red('Error: Vision file not found at .ralph/config/vision.md'));
+      console.log('');
+      console.log('Create your vision first:');
+      console.log('  Use @.ralph/roles/ralph-plan-vision.md in Claude Code');
+      process.exit(1);
+    }
+    if (options.local) process.env.RALPH_LOCAL = '1';
+    console.log(chalk.dim('Starting Ralph auto mode (plan → execute)...'));
+    runScript('auto.sh', [options.planMax, options.startMax, options.model || '', options.local ? '1' : '', options.sandbox ? '1' : '']);
   });
 
 program
